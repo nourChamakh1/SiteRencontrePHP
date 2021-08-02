@@ -10,5 +10,5 @@
 .navbar-light .navbar-nav .nav-link:hover, .nav-link:focus {
     color: white;
     border-bottom: 2px solid white;
-    padding-bottom: 3px;
+    padding-bottom: 1px;
 }
