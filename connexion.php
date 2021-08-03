@@ -9,30 +9,63 @@
       if(isset($_POST['inscription'])){
           //echo'ok';
           $pseudo = (String) trim($pseudo);
-          $mail = (String) trim($mail);
+          $mail = (String) strtolower(trim($mail));
           $password = (String) trim($password);
           $jour = (int) trim($jour);
           $mois = (int) trim($mois);
           $annee = (int) trim($annee);
-          $departement = (int) trim($departement);
+          $departement = (String) trim($departement);
           $date_naissance = (String) null;
-          $date_connexion = (String) null;
+          
            
           if(empty($pseudo)){
               $valid = false;
               $err_pseudo = "Veuillez renseingner ce champs !";
+          }else{
+              $req = $BDD->prepare("SELECT id
+              FROM utilisateur
+              WHERE pseudo = ?");
+
+              $req->execute(array($pseudo));
+              $utilisateur = $req->fetch();
+
+              if(isset($utilisateur['id'])){
+                  $valid = false;
+                  $err_pseudo ="Ce pseudo existe déjà";
+              }
           }
+
+
+
           if(empty($mail)){
               $valid = false;
               $err_mail = "Veuillez renseingner ce champs !";
-          }
+          }else{
+
+            $req = $BDD->prepare("SELECT id
+            FROM utilisateur
+            WHERE mail = ?");
+
+            $req->execute(array($mail));
+            $utilisateur = $req->fetch();
+
+            if(isset($utilisateur['id'])){
+                $valid = false;
+                $err_mail ="Ce mail existe déjà";
+            }
+
+        
+        }
+
+
+
           if(empty($password)){
               $valid = false;
               $err_password = "Veuillez renseingner ce champs !";
+         
           }
-          $verif_jour = array(1 , 2 , 3);
 
-          if(!in_array($jour , $verif_jour)){
+          if( $jour <= 0 || $jour > 31 ){
               $valid = false;
               $err_jour = "Veuillez renseingner ce champs !";
 
@@ -61,10 +94,16 @@
               $date_naissance = $annee .'-' . $mois .'-' . $jour;
 
           }
+          
 
-          $verif_departement = array(1 , 2 , 3);
+          $req = $BDD->prepare("SELECT departement_id
+                     FROM departement 
+                     WHERE departement_code=?");
+       
+          $req->execute(array($departement));
+          $verif_departement = $req->fetch(); 
 
-          if(!in_array($departement , $verif_departement)){
+          if(!isset($verif_departement['departement_id'])){
               $valid = false;
               $err_departement = "Veuillez renseingner ce champs !";
 
@@ -73,6 +112,8 @@
 
           if($valid){
               $date_inscription = date("Y-m-d");
+              $password = crypt($password, '$6$rounds=5000$usesomesillystringforsalt$');
+
               $req = $BDD->prepare("INSERT INTO utilisateur(pseudo, mail , password, date_naissance, departement ,date_inscription, date_connexion)
               VALUES(?,?,?,?,?,?,?)"); 
               
@@ -108,6 +149,7 @@
     ?>
     
     <h1>Inscription</h1>
+
     <form method="post" >
         <section>
             <div>
@@ -116,19 +158,34 @@
                       echo $err_pseudo;
                   }
                 ?>
-                <input type="text" name="pseudo" placeholder="Pseudo">
+                <input type="text" name="pseudo" placeholder="Pseudo" value="<?php if(isset($pseudo)) { echo $pseudo ;}  ?>">
             </div>
             <div>
+                <?php
+                  if(isset($err_mail)){
+                      echo $err_mail;
+                  }
+                ?>
                 <input type="text" name="mail" placeholder="Mail">
             </div>
             <div>
+            <?php
+                  if(isset($err_password)){
+                      echo $err_password;
+                  }
+                ?>
                 <input type="password" name="password" placeholder="Password">
             </div>
             <div>
                 <select name="jour">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
+                    <?php
+                      for($i = 1 ; $i <= 31 ; $i++) {
+                     ?>
+                        <option value="<?= $i ?>">  <?= $i ?> </option>
+                     <?php
+                      }
+                    ?>
+                    
                 </select>
                 <select name="mois">
                     <option value="7">7</option>
@@ -143,9 +200,23 @@
              </div>
              <div>
                 <select name="departement">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
+                    <?php
+                     $req = $BDD->prepare("SELECT departement_code, departement_nom
+                     FROM departement ");
+       
+                     $req->execute();
+                     $dep = $req->fetchAll(); 
+
+                     foreach($dep as $i)
+                     {
+                    ?>
+
+                     <option value="<?= $i['departement_code'] ?>"><?= $i['departement_nom']?></option>
+ 
+                     <?php
+                     }
+                    ?>
+                    
                 </select>
              </div>
 
